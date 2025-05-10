@@ -13,7 +13,6 @@ public:
     bool subscribe(const char *topic, int qos = 0);
     void disconnect();
 
-private:
     mqtt_client_t *client;
 
     static void s_connection_cb(mqtt_client_t *c, void *arg, mqtt_connection_status_t status);

@@ -40,7 +40,10 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(RTOS_setup RTOS_setup.cpp )
+add_executable(     RTOS_setup
+                    RTOS_setup.cpp 
+                    mqtt/mqtt_client.cpp
+                    ${PICO_SDK_PATH}/lib/lwip/src/apps/mqtt/mqtt.c )
 
 pico_set_program_name(RTOS_setup "RTOS_setup")
 pico_set_program_version(RTOS_setup "0.1")

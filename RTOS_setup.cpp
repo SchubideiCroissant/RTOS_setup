@@ -47,9 +47,10 @@ int main() {
 
     cyw43_arch_enable_sta_mode();
     printf("Connecting to Wi‑Fi …\n");
-    if (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD,
+    if (int result = cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD,
                                            CYW43_AUTH_WPA2_AES_PSK, 30000)) {
         printf("failed to connect Wi‑Fi.\n");
+        printf("WLAN-Fehlercode: %d\n", result);
         return 1;
     }
     printf("Wi‑Fi connected.\n");
@@ -63,6 +64,7 @@ int main() {
 
     mqtt.subscribe("test/topic");
     mqtt.publish("test/topic", "Hello from Pico W");
+
 
     // ---- Haupt‑Loop: Stack am Leben halten ----
     while (true) {
