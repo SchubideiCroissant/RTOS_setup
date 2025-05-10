@@ -40,7 +40,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(RTOS_setup RTOS_setup.cpp)
+add_executable(RTOS_setup RTOS_setup.cpp )
 
 pico_set_program_name(RTOS_setup "RTOS_setup")
 pico_set_program_version(RTOS_setup "0.1")
@@ -54,13 +54,17 @@ target_link_libraries(RTOS_setup
     pico_stdlib
     FreeRTOS-Kernel
     FreeRTOS-Kernel-Heap4
+    pico_cyw43_arch_lwip_threadsafe_background
 )
+
 
 # Add the standard include files to the build
 target_include_directories(RTOS_setup PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
   ${CMAKE_CURRENT_LIST_DIR}/.. # for our common lwipopts or any other standard includes, if required
   $ENV{FREERTOS_KERNEL_PATH}/include
+  ${CMAKE_CURRENT_LIST_DIR}/mqtt
+
 )
 
 pico_add_extra_outputs(RTOS_setup)

@@ -3,6 +3,12 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
+#include "pico/cyw43_arch.h"
+#include "lwip/sockets.h"
+#include "pico/util/queue.h"
+#include "lwip/apps/mqtt.h"
+#include "mqtt_client.hpp"  // Falls du die Klasse ausgelagert hast
+#include "mqtt_config.hpp"
 
 SemaphoreHandle_t xSemaphore; //Initialisierung Semaphor
 
@@ -30,24 +36,38 @@ void vTask2(void *pvParameters) {
     }
 }
 
+// ============================================================
 int main() {
     stdio_init_all();
-    int a = 8; // Wird übergeben
-    int* p_a = &a;
-    xSemaphore = xSemaphoreCreateBinary(); // wird blockiert erstellt
-    if (xSemaphore != NULL) 
-        // Gib den Semaphore frei, damit er verwendet werden kann
-        xSemaphoreGive(xSemaphore);
-    // Erstelle Task 1
-    xTaskCreate(vTask1, "Task 1", 256, p_a, 3, NULL);
 
-    // Erstelle Task 2
-    xTaskCreate(vTask2, "Task 2", 256, NULL, 1, NULL);
+    if (cyw43_arch_init()) {
+        printf("cyw43_arch_init() failed\n");
+        return 1;
+    }
 
-    // Starte den Scheduler
-    vTaskStartScheduler();
+    cyw43_arch_enable_sta_mode();
+    printf("Connecting to Wi‑Fi …\n");
+    if (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD,
+                                           CYW43_AUTH_WPA2_AES_PSK, 30000)) {
+        printf("failed to connect Wi‑Fi.\n");
+        return 1;
+    }
+    printf("Wi‑Fi connected.\n");
 
+    // ---- MQTT nutzen ----
+    MqttClient mqtt{};
+    if (!mqtt.connect(MQTT_BROKER_ADDR, MQTT_BROKER_PORT)) {
+        printf("MQTT connect failed\n");
+        return 1;
+    }
+
+    mqtt.subscribe("test/topic");
+    mqtt.publish("test/topic", "Hello from Pico W");
+
+    // ---- Haupt‑Loop: Stack am Leben halten ----
     while (true) {
-        // Sollte nie erreicht werden
+        cyw43_arch_poll();     // wichtig für Wi‑Fi & lwIP
+        sleep_ms(100);
     }
 }
+
