@@ -11,32 +11,45 @@
 #include "mqtt_config.hpp"
 
 SemaphoreHandle_t xSemaphore; //Initialisierung Semaphor
+MqttClient mqtt; // global für Tasks
 
-void vTask1(void *pvParameters) {
+void cyw43_poll_task(void *pvParameters) {
+    const TickType_t interval = pdMS_TO_TICKS(50); // 50 ms konstant
+    TickType_t last_wake_time = xTaskGetTickCount();
+
     while (true) {
-        int* p = (int*)pvParameters;
-        if( xSemaphoreTake(xSemaphore, portMAX_DELAY) == pdTRUE)
-        {
-            printf("Task 1 is running!\nÜbergebener Paramter: %d \n\n", *p);
-            vTaskDelay(pdMS_TO_TICKS(500)); // Simulierte Arbeit für 500 ms
-            xSemaphoreGive(xSemaphore);
-            vTaskDelay(pdMS_TO_TICKS(2000));  // 1 Sekunde Pause
-        }
+        cyw43_arch_poll(); // z. B. für MQTT/WLAN Verarbeitung
+        vTaskDelayUntil(&last_wake_time, interval);
     }
 }
 
-void vTask2(void *pvParameters) {
+
+void mqtt_alive_task(void *pvParameters) {
+    const TickType_t interval = pdMS_TO_TICKS(1000);
+    TickType_t last_wake_time = xTaskGetTickCount();
+
+    const char* topic = "picow/status";
+    const char* payload = "{\"status\":\"alive\"}";
+
     while (true) {
-        if( xSemaphoreTake(xSemaphore, portMAX_DELAY) == pdTRUE){
-        printf("Task 2 is running!\n\n");
-        vTaskDelay(pdMS_TO_TICKS(500)); // Simulierte Arbeit für 500 ms
-        xSemaphoreGive(xSemaphore);
-        vTaskDelay(pdMS_TO_TICKS(2000));  // 2 Sekunden Pause
-        }
+        mqtt.publish(topic, payload);
+        vTaskDelayUntil(&last_wake_time, interval);
+    }
+}
+void mqtt_receive_task(void *pvParameters) {
+    const TickType_t interval = pdMS_TO_TICKS(1000); 
+    TickType_t last_wake_time = xTaskGetTickCount();
+    // Topic abonnieren
+    mqtt.subscribe("picow/input", 0);
+
+    while (true) {
+        // Nachrichten kommen über Callbacks (du kannst hier z. B. blinkende LED etc. machen)
+        vTaskDelay(pdMS_TO_TICKS(1000)); // oder blockiere auf Event/Queue
+        vTaskDelayUntil(&last_wake_time, interval);
     }
 }
 
-// ============================================================
+
 int main() {
     stdio_init_all();
 
@@ -62,14 +75,16 @@ int main() {
         return 1;
     }
 
-    mqtt.subscribe("test/topic");
-    mqtt.publish("test/topic", "Hello from Pico W");
+    else{
+    
+    xTaskCreate(cyw43_poll_task, "MQTT_Poll", 1024, NULL, 2, NULL);
+    xTaskCreate(mqtt_alive_task, "MQTT_Alive", 1024, NULL, 4, NULL);
+    //xTaskCreate(mqtt_receive_task, "MQTT_RX", 1024, NULL, 1, NULL);
+    vTaskStartScheduler();
+    }
 
-
-    // ---- Haupt‑Loop: Stack am Leben halten ----
     while (true) {
-        cyw43_arch_poll();     // wichtig für Wi‑Fi & lwIP
-        sleep_ms(100);
+       
     }
 }
 
