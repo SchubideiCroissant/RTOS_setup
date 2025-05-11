@@ -53,6 +53,8 @@
 #define LWIP_DHCP_DOES_ACD_CHECK    0
 
 #define LWIP_MQTT                   1
+#define MQTT_OUTPUT_RINGBUF_SIZE 512
+#define MQTT_VAR_HEADER_BUFFER_LEN 128
 
 #ifndef NDEBUG
 #define LWIP_DEBUG                  1

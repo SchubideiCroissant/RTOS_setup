@@ -9,9 +9,11 @@
 #include "lwip/apps/mqtt.h"
 #include "mqtt_client.hpp"  // Falls du die Klasse ausgelagert hast
 #include "mqtt_config.hpp"
+#include <memory>
+
+std::unique_ptr<MqttClient> mqtt;   // nur ein Zeiger ist global
 
 SemaphoreHandle_t xSemaphore; //Initialisierung Semaphor
-MqttClient mqtt; // global für Tasks
 
 void cyw43_poll_task(void *pvParameters) {
     const TickType_t interval = pdMS_TO_TICKS(50); // 50 ms konstant
@@ -32,7 +34,7 @@ void mqtt_alive_task(void *pvParameters) {
     const char* payload = "{\"status\":\"alive\"}";
 
     while (true) {
-        mqtt.publish(topic, payload);
+        mqtt->publish(topic, payload);
         vTaskDelayUntil(&last_wake_time, interval);
     }
 }
@@ -40,7 +42,7 @@ void mqtt_receive_task(void *pvParameters) {
     const TickType_t interval = pdMS_TO_TICKS(1000); 
     TickType_t last_wake_time = xTaskGetTickCount();
     // Topic abonnieren
-    mqtt.subscribe("picow/input", 0);
+    mqtt->subscribe("picow/input", 0);
 
     while (true) {
         // Nachrichten kommen über Callbacks (du kannst hier z. B. blinkende LED etc. machen)
@@ -68,15 +70,14 @@ int main() {
     }
     printf("Wi‑Fi connected.\n");
 
-    // ---- MQTT nutzen ----
-    MqttClient mqtt{};
-    if (!mqtt.connect(MQTT_BROKER_ADDR, MQTT_BROKER_PORT)) {
-        printf("MQTT connect failed\n");
+    mqtt = std::make_unique<MqttClient>();          // jetzt ist LwIP initialisiert
+    if (!mqtt->connect(MQTT_BROKER_ADDR, MQTT_BROKER_PORT)) {
+        printf("MQTT connect failed\n");
         return 1;
     }
-
     else{
     
+    printf("MQTT connect success\n");
     xTaskCreate(cyw43_poll_task, "MQTT_Poll", 1024, NULL, 2, NULL);
     xTaskCreate(mqtt_alive_task, "MQTT_Alive", 1024, NULL, 4, NULL);
     //xTaskCreate(mqtt_receive_task, "MQTT_RX", 1024, NULL, 1, NULL);

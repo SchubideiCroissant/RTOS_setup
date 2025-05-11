@@ -34,3 +34,7 @@ Dieses Projekt zeigt:
 3. Klone das Repository und öffne es in deiner Entwicklungsumgebung.
 4. Kompiliere und lade das Projekt auf den Pico.
 5. Nutze einen seriellen Monitor, um die Task-Ausgabe zu sehen.
+Mosquitto Server starten:
+```bash
+docker run -it -p 1883:1883 -v C:/Users/yoshi/Documents/Pico/RTOS_setup/mosquitto.conf:/mosquitto/config/mosquitto.conf eclipse-mosquitto
+```

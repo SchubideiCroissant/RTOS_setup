@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "lwip/ip_addr.h"
 
+
 MqttClient::MqttClient() : client(mqtt_client_new()) {}
 
 bool MqttClient::connect(const char *host_ip, u16_t port) {
